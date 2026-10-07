@@ -267,7 +267,74 @@ function run() {
     ck('理论页含流派差异', th.includes('早晚子时'));
     ck('十神对照表 10x10', doc.querySelectorAll('#pane-theory table.grid').length >= 4);
 
-    /* 20. 越界保护 */
+    /* 20. 《穷通宝鉴》调候数据（十干 × 十二月） */
+    const T = win.Tiaohou;
+    ck('调候模块已加载', !!T);
+    let cells = 0, missing = 0;
+    for (let g = 0; g < 10; g++) {
+      for (let z = 0; z < 12; z++) {
+        cells++;
+        const r = T.look(g, z);
+        if (!r || !r.main || !r.text) missing++;
+      }
+    }
+    ck('120 条调候规则齐全（10 天干 × 12 月令）', cells === 120 && missing === 0,
+      cells + ' 格，缺 ' + missing);
+
+    /* 核心验证：同样是冬月子月，日主不同 → 调候用神不同 */
+    const G = '甲乙丙丁戊己庚辛壬癸';
+    const ziCases = [['甲', '丁'], ['庚', '丁'], ['丙', '壬'], ['癸', '庚'], ['辛', '丙']];
+    let ziBad = 0;
+    ziCases.forEach(([g, expect]) => {
+      const got = T.look(G.indexOf(g), 0).main;   // 0 = 子月
+      if (got !== expect) { ziBad++; console.log('    子月 ' + g + ' 期望 ' + expect + ' 实际 ' + got); }
+    });
+    ck('子月调候因日主而异（不是一律"冬月补火"）', ziBad === 0, ziBad + ' 处不符');
+
+    /* 再验一组：午月（盛夏）也不是一律补水 */
+    const wuCases = [['甲', '癸'], ['丙', '壬'], ['庚', '壬'], ['戊', '壬'], ['癸', '庚']];
+    let wuBad = 0;
+    wuCases.forEach(([g, expect]) => {
+      const got = T.look(G.indexOf(g), 6).main;   // 6 = 午月
+      if (got !== expect) { wuBad++; console.log('    午月 ' + g + ' 期望 ' + expect + ' 实际 ' + got); }
+    });
+    ck('午月调候因日主而异', wuBad === 0, wuBad + ' 处不符');
+
+    /* 21. 调候页与数据一致（端到端） */
+    const ganChar = doc.querySelectorAll('#bzGrid .bz-col')[2].querySelector('.bz-gan').textContent;
+    const zhiChar = doc.querySelectorAll('#bzGrid .bz-col')[1].querySelector('.bz-zhi').textContent;
+    const expectMain = T.look(G.indexOf(ganChar), '子丑寅卯辰巳午未申酉戌亥'.indexOf(zhiChar)).main;
+    const ysText = doc.getElementById('pane-yongshen').textContent;
+    ck('调候页显示的用神与数据表一致', ysText.indexOf('调候用神：' + expectMain) >= 0,
+      '日主' + ganChar + ' / ' + zhiChar + '月 期望 ' + expectMain);
+    ck('调候页引用《穷通宝鉴》原文', ysText.indexOf('穷通宝鉴') >= 0);
+    ck('调候页有日主十二月速查表',
+      doc.querySelectorAll('#pane-yongshen table.grid').length >= 1);
+    ck('调候页明确否定"冬火夏水"简化说法', ysText.indexOf('冬天生人一律补火') >= 0);
+
+    /* 22. 四柱详解：宫位 + 六亲 */
+    const szText = doc.getElementById('sizhuBody').textContent;
+    ck('四柱详解显示宫位', szText.indexOf('宫') >= 0, szText.slice(0, 80));
+    ck('四柱详解显示六亲', szText.indexOf('六亲') >= 0);
+    ck('藏干表含六亲列',
+      doc.querySelectorAll('#sizhuBody table.grid thead th').length >= 5);
+
+    /* 23. 理论页新增内容 */
+    const thT = doc.getElementById('pane-theory').textContent;
+    ck('理论页含十干逐月调候速查表', thT.indexOf('十干逐月调候用神速查') >= 0);
+    ck('理论页含八格成格条件', thT.indexOf('成格条件') >= 0);
+    ck('理论页含相神概念', thT.indexOf('相神') >= 0);
+    ck('理论页含格局vs扶抑两套体系', thT.indexOf('格局定贵贱') >= 0);
+    ck('理论页含六亲表', thT.indexOf('六亲：十神对应谁') >= 0);
+    ck('理论页含宫位表', thT.indexOf('宫位：谁住在哪里') >= 0);
+    ck('理论页含现代学术视角', thT.indexOf('陆致极') >= 0);
+    ck('理论页含时空基因', thT.indexOf('时空基因') >= 0);
+    ck('理论页含批判性反思', thT.indexOf('巴纳姆效应') >= 0);
+    ck('理论页含吉神顺用凶神逆用原文', thT.indexOf('不善而逆用之') >= 0);
+    ck('理论页表格数量充足', doc.querySelectorAll('#pane-theory table.grid').length >= 6,
+      doc.querySelectorAll('#pane-theory table.grid').length + ' 张');
+
+    /* 24. 越界保护 */
     doc.getElementById('useTST').checked = true;
     set(doc, 'y', '2100'); set(doc, 'mo', '12'); set(doc, 'd', '31'); set(doc, 'h', '23'); set(doc, 'mi', '0');
     doc.getElementById('btnCalc').click();
