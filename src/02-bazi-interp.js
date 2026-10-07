@@ -133,33 +133,79 @@
     身弱: '日主失令少根，需印比撑持。若全局无根无生扶，需考虑是否入从格（另论）。'
   };
 
-  /* ---------- 二、调候 ---------- */
+  /* ---------- 二、调候（《穷通宝鉴》十干逐月，120 条） ---------- */
   function analyzeTiaohou(chart) {
-    var mz = chart.pillars[1].zhi;
-    var need = null, has = false, elems = [];
-    chart.pillars.forEach(function (p) {
-      elems.push(WX[p.gan]);
-      elems.push(ZHI_WX[p.zhi]);
-    });
-    if (mz === 0 || mz === 1 || mz === 11) {        // 亥子丑：冬
-      need = '火'; has = elems.indexOf('火') >= 0;
-    } else if (mz === 5 || mz === 6 || mz === 7) {  // 巳午未：夏
-      need = '水'; has = elems.indexOf('水') >= 0;
-    }
-    if (!need) {
+    var dm = chart.dayMaster.gan;      // 日干索引
+    var mz = chart.pillars[1].zhi;     // 月支索引
+    var T = global.Tiaohou;
+    var rule = T ? T.look(dm, mz) : null;
+    var climate = T ? T.CLIMATE[mz] : '';
+    var season = T ? T.SEASON[mz] : '';
+
+    /* 兜底：数据缺失时退回季节法（不应发生，仅为保险） */
+    if (!rule) {
+      var cold = (mz === 0 || mz === 1 || mz === 11);
+      var hot = (mz === 5 || mz === 6 || mz === 7);
+      if (!cold && !hot) {
+        return { needed: false, text: '生于春、秋之月，寒暖适中，一般不需专门调候，回到生克格局即可。' };
+      }
       return {
-        needed: false,
-        text: '生于春、秋之月，寒暖适中，一般不需专门调候，回到生克格局即可。'
+        needed: true, urgent: true, element: cold ? '火' : '水', has: false,
+        season: cold ? '冬' : '夏', climate: climate, month: ZHI[mz] + '月',
+        detail: '', text: cold ? '冬月生人，需火暖局。' : '夏月生人，需水润泽。'
       };
     }
+
+    var has = T.hasGan(chart, rule.main);       // 局中（含藏干）是否有这个调候用神
+    var el = B.WX[GAN.indexOf(rule.main)];      // 用神的五行
+    var urgent = (season === '冬' || season === '夏');
+
+    var text = '《穷通宝鉴》：' + GAN[dm] + '（' + (T ? T.WX[dm] : WX[dm]) + '）日主生于'
+      + ZHI[mz] + '月（' + climate + '），调候用神取「' + rule.main + '」(' + el + ')。'
+      + rule.text + '。'
+      + (has
+        ? ' 局中（含藏干）已有「' + rule.main + '」，调候到位。'
+        : ' 局中未见「' + rule.main + '」，调候不足——'
+          + (urgent ? '此为寒暖燥湿之偏，调候为急，优先级常高于扶抑。'
+                    : '所幸非寒暖极端之月，影响较冬夏为轻，但仍属缺憾。'));
+
     return {
-      needed: true, element: need, has: has,
-      season: (mz === 0 || mz === 1 || mz === 11) ? '冬月（水寒土冻）' : '夏月（火炎土燥）',
-      text: (need === '火'
-        ? '冬月生人，天寒地冻，需丙丁火暖局解冻；调候用神优先级常高于扶抑。'
-        : '夏月生人，烈日炎炎，需壬癸水润泽滋培；无水润则性燥福薄。')
-        + (has ? ' 局中已有' + need + '，调候到位。' : ' 局中未见' + need + '，调候不足，纵有良格也多身心煎熬。')
+      needed: true, urgent: urgent, element: el, main: rule.main, has: has,
+      season: season, climate: climate, month: ZHI[mz] + '月',
+      dayMaster: GAN[dm] + (T ? T.WX[dm] : WX[dm]),
+      detail: rule.text, text: text
     };
+  }
+
+  /* ---------- 六亲与宫位 ---------- */
+  /* 十神 → 六亲。male / female 不同则分列，相同则用 common */
+  var LIUQIN = {
+    zy: { common: '母亲、长辈、师长、学历文凭、庇护', note: '无正印则看偏印' },
+    py: { common: '继母、庶母、偏门学问与技艺', note: '正统以外的一切「生我」之力' },
+    zc: { male: '妻子、固定资产、稳定收入', female: '钱财、务实经营', note: '男命正财为正妻' },
+    pc: { common: '父亲、投资经营、人脉资源、意外之财', note: '偏财为父，古今通用；无偏财看正财' },
+    zg: { male: '女儿、职位、规则、名誉', female: '丈夫、职位、规则、名誉', note: '女命正官为正夫，无正官看七杀' },
+    qs: { male: '儿子、压力、竞争、魄力', female: '偏夫、情人、压力、竞争', note: '男命七杀为儿子' },
+    ss: { male: '才华表达、口福、技艺', female: '女儿、福寿、才艺、温和', note: '女命食神为女儿' },
+    sg: { male: '才华、反叛、创意、技艺', female: '儿子、才华、傲气', note: '女命伤官为儿子' },
+    bs: { male: '兄弟、同辈、朋友、竞争者', female: '姐妹、同辈、朋友、竞争者' },
+    jc: { male: '姐妹、合作伙伴、分利者', female: '兄弟、合作伙伴、分利者' }
+  };
+
+  /* 四柱宫位：谁住在哪里 */
+  var GONGWEI = {
+    year: { name: '祖上宫', scope: '祖辈、根基、童年环境、与父母家族的缘分', age: '1–16 岁' },
+    month: { name: '父母兄弟宫', scope: '父母、兄弟姐妹、青年环境、事业起步的平台', age: '17–32 岁' },
+    day: { name: '夫妻宫', scope: '自己与配偶。日干是我，日支是配偶的位置', age: '33–48 岁' },
+    hour: { name: '子女宫', scope: '子女、晚辈、晚年归宿、成果与输出', age: '49 岁以后' }
+  };
+
+  /* 取某十神在本命性别下的六亲含义 */
+  function liuqinOf(key, sex) {
+    var v = LIUQIN[key];
+    if (!v) return { kin: '—', note: '' };
+    var kin = v.common || (sex === 'M' ? v.male : v.female) || v.male || '';
+    return { kin: kin, note: v.note || '' };
   }
 
   /* ---------- 三、格局 ---------- */
@@ -282,11 +328,22 @@
     var strong = lvl === '身强' || lvl === '偏强';
     var weak = lvl === '身弱' || lvl === '偏弱';
 
-    /* 调候优先 */
+    /* 调候：《穷通宝鉴》十干逐月。冬夏寒暖极端者为「急」，其余为常 */
     if (tiaohou.needed && !tiaohou.has) {
       ways.push({
-        way: '调候', element: tiaohou.element, priority: 1,
-        text: '命局' + tiaohou.season + '，寒暖燥湿偏差明显，调候为急，优先级高于扶抑。'
+        way: '调候', element: tiaohou.element,
+        priority: tiaohou.urgent ? 1 : 2,
+        text: ('生于' + tiaohou.month + '（' + tiaohou.climate + '），《穷通宝鉴》取「'
+          + tiaohou.main + '」(' + tiaohou.element + ')为调候用神：' + tiaohou.detail + '。')
+          + (tiaohou.urgent
+            ? ' 此月寒暖燥湿偏差明显，调候为急，优先级高于扶抑。'
+            : ' 此月寒暖非极端，重要程度略低于扶抑，但局中缺之终属不足。')
+      });
+    } else if (tiaohou.needed && tiaohou.has) {
+      ways.push({
+        way: '调候', element: tiaohou.element, priority: 5,
+        text: '局中已有调候用神「' + tiaohou.main + '」，' + tiaohou.month + '（'
+          + tiaohou.climate + '）的寒暖燥湿已经到位，不必再补。'
       });
     }
     /* 通关：两行交战 */
@@ -429,6 +486,7 @@
   global.BaziInterp = {
     analyzeAll: analyzeAll, analyzeStrength: analyzeStrength, analyzeTiaohou: analyzeTiaohou,
     analyzeGeju: analyzeGeju, analyzeYongshen: analyzeYongshen, analyzeYun: analyzeYun,
-    SS_MEAN: SS_MEAN, LEVEL_COMMENT: LEVEL_COMMENT
+    SS_MEAN: SS_MEAN, LEVEL_COMMENT: LEVEL_COMMENT,
+    LIUQIN: LIUQIN, GONGWEI: GONGWEI, liuqinOf: liuqinOf
   };
 })(window);
