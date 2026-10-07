@@ -1223,6 +1223,224 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
 </script>
 <script>
 /* =============================================================
+ *  《穷通宝鉴》调候用神：十天干 × 十二月令 = 120 条
+ *  数据来源：穷通宝鉴（拦江网）系统流传的「生辰调候用神表」，
+ *  并与维基文库《穷通宝鉴》原文（论木/论火等）及各家简化表交叉核对。
+ *
+ *  用法：TIAOHOU[日干索引][月支索引] → { main, text }
+ *    main = 第一调候用神（单字天干）
+ *    text = 该月原文要旨
+ *
+ *  天干索引：0甲 1乙 2丙 3丁 4戊 5己 6庚 7辛 8壬 9癸
+ *  地支索引：0子 1丑 2寅 3卯 4辰 5巳 6午 7未 8申 9酉 10戌 11亥
+ * ============================================================= */
+(function (global) {
+  'use strict';
+
+  var RAW = {
+    /* 甲木：春需丙暖、庚裁；夏需癸润；秋需庚丁；冬需丁暖 */
+    0: {
+      2: ['丙', '丙火为主，癸水为佐'],
+      3: ['庚', '专用庚金，无庚用丙、丁'],
+      4: ['庚', '用庚必须有丁，无庚用壬'],
+      5: ['癸', '癸为主，次用丁、庚'],
+      6: ['癸', '无癸用丁，木多者取庚'],
+      7: ['癸', '上半月用癸，下半月取庚、丁'],
+      8: ['庚', '先庚后丁，壬水次之'],
+      9: ['庚', '庚为主，丙、丁调候'],
+      10: ['庚', '木多用庚，土多用甲'],
+      11: ['庚', '用庚、丁、丙，木多用甲'],
+      0: ['丁', '丁先庚，丙后'],
+      1: ['丁', '丁为必须，次庚丙，通寅巳佳']
+    },
+    /* 乙木：丙癸不离，冬专丙 */
+    1: {
+      2: ['丙', '丙为主，癸略取则足'],
+      3: ['丙', '丙为主，癸略取则足，忌强金'],
+      4: ['癸', '癸、丙并用，水强用戊'],
+      5: ['癸', '专用癸水调候'],
+      6: ['癸', '上半月癸，下半月丙癸兼用'],
+      7: ['癸', '用癸，金水多取丙泄，己土制'],
+      8: ['丙', '有庚取丙克癸泄，取己土为佐'],
+      9: ['癸', '上半月癸先丙，下半月丙先癸、丁'],
+      10: ['癸', '先癸后辛'],
+      11: ['丙', '专取丙用，水多兼用戊'],
+      0: ['丙', '专用丙火'],
+      1: ['丙', '寒木专用丙火']
+    },
+    /* 丙火：专壬，四季不离 */
+    2: {
+      2: ['壬', '壬水为主，庚为佐'],
+      3: ['壬', '先壬后己'],
+      4: ['壬', '专用壬水，土厚以甲为佐'],
+      5: ['壬', '先壬，次庚、癸'],
+      6: ['壬', '用壬、庚，通申者佳'],
+      7: ['壬', '用壬、庚，通申者佳'],
+      8: ['壬', '用壬，水多取戊制'],
+      9: ['壬', '四柱丙多，壬为奇，无壬用癸'],
+      10: ['甲', '忌土厚，甲先壬后'],
+      11: ['甲', '用甲、壬、庚、戊'],
+      0: ['壬', '用壬，水多以戊、己制'],
+      1: ['壬', '用壬，土多取甲制']
+    },
+    /* 丁火：以甲为油，庚劈甲引丁 */
+    3: {
+      2: ['甲', '用甲必须兼用庚金'],
+      3: ['庚', '庚、乙并用，无乙用甲'],
+      4: ['甲', '用甲，木盛取庚，水众用戊'],
+      5: ['甲', '用甲、庚，木多取庚先'],
+      6: ['壬', '用壬、庚、癸'],
+      7: ['甲', '甲、壬、庚，用甲不可缺庚'],
+      8: ['甲', '甲、庚、丙，有巳直取巳为用'],
+      9: ['甲', '用甲、庚、丙、戊'],
+      10: ['甲', '用甲、庚、丙、戊'],
+      11: ['甲', '甲为主，庚为佐，戊、癸酌取'],
+      0: ['甲', '甲为主，庚为佐，戊、癸酌取'],
+      1: ['甲', '甲为主，庚为佐，戊、癸酌取']
+    },
+    /* 戊土：春丙甲癸、夏壬、秋冬丙 */
+    4: {
+      2: ['丙', '先丙次甲、癸，三者不可缺一'],
+      3: ['丙', '先丙次甲、癸，三者不可缺一'],
+      4: ['甲', '土正当令，先甲次丙、癸'],
+      5: ['甲', '先甲次丙、癸'],
+      6: ['壬', '调候为上，先壬次甲、丙'],
+      7: ['癸', '癸水优先，次丙、甲'],
+      8: ['丙', '丙、癸、甲，土多用甲不可癸'],
+      9: ['丙', '丙为主，癸为佐'],
+      10: ['甲', '甲、丙、癸，有金局者癸先'],
+      11: ['甲', '甲、丙，二者不可缺一'],
+      0: ['丙', '丙为主，甲佐之'],
+      1: ['丙', '丙为主，甲佐之']
+    },
+    /* 己土：喜丙暖、癸润 */
+    5: {
+      2: ['丙', '丙庚甲，若水成局兼用戊土'],
+      3: ['甲', '甲、丙、癸，忌甲己合土'],
+      4: ['丙', '丙、癸、甲，土多甲优先'],
+      5: ['癸', '癸为主，丙佐之'],
+      6: ['癸', '癸为主，丙佐之'],
+      7: ['癸', '癸为主，丙佐之'],
+      8: ['丙', '丙、癸，庚金当令须丙火制'],
+      9: ['丙', '丙、癸，酌取辛金'],
+      10: ['甲', '甲、丙、癸，甲丙用以扶抑'],
+      11: ['丙', '丙、甲，水旺兼用戊'],
+      0: ['丙', '丙、甲，水旺兼用戊'],
+      1: ['丙', '丙、甲，水旺兼用戊']
+    },
+    /* 庚金：火炼成器，秋冬尤需丁丙 */
+    6: {
+      2: ['戊', '戊、甲、丙，火多用壬'],
+      3: ['丁', '丁、甲、庚，无丁可取丙'],
+      4: ['甲', '甲、丁，干火旺用壬，支用癸'],
+      5: ['壬', '用壬、丙、丁、戊'],
+      6: ['壬', '壬、癸，火旺也可用戊、己'],
+      7: ['丁', '丁、甲，成土局则甲先丁后'],
+      8: ['丁', '丁、甲，专用丁，无甲可用乙'],
+      9: ['丁', '丁、甲，支中略取丙火'],
+      10: ['甲', '甲、壬，用壬忌见己土'],
+      11: ['丁', '用丁、丙'],
+      0: ['丁', '丁、甲、丙，丙不可缺'],
+      1: ['丁', '丁、甲、丙，丙不可缺']
+    },
+    /* 辛金：喜壬水洗淘，冬需丙暖 */
+    7: {
+      2: ['己', '己优先，次壬、庚'],
+      3: ['壬', '用壬、甲，忌丁透干'],
+      4: ['壬', '壬、甲，若丙辛合，兼用丙'],
+      5: ['壬', '壬、甲、癸，无戊为上格'],
+      6: ['壬', '壬、己、癸，壬不宜旺，忌丁'],
+      7: ['壬', '壬、庚、甲，忌土旺'],
+      8: ['壬', '壬为主，次甲、戊，不忌癸水'],
+      9: ['壬', '用壬，土盛甲先，金旺兼用丁'],
+      10: ['壬', '壬、甲，畏火旺'],
+      11: ['壬', '用壬、丙，金清水白之格'],
+      0: ['丙', '用丙，戊、壬、甲酌用'],
+      1: ['丙', '用丙，戊、壬、己酌用']
+    },
+    /* 壬水：喜戊堤、丙暖、庚辛发源 */
+    8: {
+      2: ['庚', '庚、丙，比劫重戊为先'],
+      3: ['戊', '戊为主，次辛、庚'],
+      4: ['甲', '甲、庚，金多兼用丙'],
+      5: ['壬', '用壬、辛、庚、癸'],
+      6: ['癸', '癸、庚、辛，忌丁透干'],
+      7: ['辛', '辛、甲，土多甲先辛后'],
+      8: ['戊', '戊、丁，二者必须有根'],
+      9: ['甲', '用甲、癸，水只需一位'],
+      10: ['甲', '甲、丙、戊，有合者丙先甲'],
+      11: ['戊', '戊、丙，木成局者庚优先'],
+      0: ['戊', '戊、丙，二者不可缺一'],
+      1: ['丙', '上半月丙先，下半月丁甲并用']
+    },
+    /* 癸水：喜辛金发源、丙火温暖 */
+    9: {
+      2: ['辛', '辛、丙，用庚者须丙庚均势'],
+      3: ['庚', '庚、辛、乙，有合庚则庚先'],
+      4: ['丙', '上半月用丙，下半月辛甲并用'],
+      5: ['辛', '用辛，无辛用庚'],
+      6: ['庚', '庚、辛、癸，不可见强力之丁'],
+      7: ['庚', '庚、辛、癸，不可见强力之丁'],
+      8: ['丁', '用丁，成金局者丁须有根'],
+      9: ['辛', '辛、丙，二全者水暖金温'],
+      10: ['辛', '辛、甲、癸、壬，忌土盛'],
+      11: ['庚', '庚、辛，水多用戊，金多取丁'],
+      0: ['庚', '庚、辛，水多用戊，金多取丁'],
+      1: ['丙', '丙、丁，火成局须庚辛']
+    }
+  };
+
+  var GAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+  var ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+
+  /* 月令所属季节与寒暖属性（用于给出通俗说明） */
+  var SEASON = {
+    2: '春', 3: '春', 4: '春', 5: '夏', 6: '夏', 7: '夏',
+    8: '秋', 9: '秋', 10: '秋', 11: '冬', 0: '冬', 1: '冬'
+  };
+  /* 月令气候定性 */
+  var CLIMATE = {
+    2: '初春余寒', 3: '仲春阳升', 4: '春末湿重',
+    5: '初夏炎升', 6: '盛夏酷热', 7: '夏末燥土',
+    8: '初秋金气', 9: '中秋肃杀', 10: '秋末燥土',
+    11: '初冬水寒', 0: '仲冬严寒', 1: '腊月寒湿'
+  };
+
+  /* 五行：某天干属于哪一行 */
+  var WX = ['木', '木', '火', '火', '土', '土', '金', '金', '水', '水'];
+
+  function look(ganIdx, zhiIdx) {
+    var row = RAW[ganIdx];
+    if (!row) return null;
+    var v = row[zhiIdx];
+    if (!v) return null;
+    return { main: v[0], text: v[1] };
+  }
+
+  /* 判断局中是否已有某天干（含地支藏干） */
+  function hasGan(chart, ganChar) {
+    var GAN_ARR = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    var target = GAN_ARR.indexOf(ganChar);
+    if (target < 0) return false;
+    for (var i = 0; i < chart.pillars.length; i++) {
+      var p = chart.pillars[i];
+      if (p.gan === target) return true;
+      for (var j = 0; j < p.canggan.length; j++) {
+        if (p.canggan[j].gan === target) return true;
+      }
+    }
+    return false;
+  }
+
+  global.Tiaohou = {
+    RAW: RAW, GAN: GAN, ZHI: ZHI, SEASON: SEASON, CLIMATE: CLIMATE, WX: WX,
+    look: look, hasGan: hasGan
+  };
+})(window);
+
+</script>
+<script>
+/* =============================================================
  *  八字分析判断：强弱 · 调候 · 格局 · 用神 · 岁运 · 批语
  *  说明：量化打分为启发式辅助工具，用于建立直观感受，
  *        不替代传统命理师的综合判断。
@@ -1357,33 +1575,79 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
     身弱: '日主失令少根，需印比撑持。若全局无根无生扶，需考虑是否入从格（另论）。'
   };
 
-  /* ---------- 二、调候 ---------- */
+  /* ---------- 二、调候（《穷通宝鉴》十干逐月，120 条） ---------- */
   function analyzeTiaohou(chart) {
-    var mz = chart.pillars[1].zhi;
-    var need = null, has = false, elems = [];
-    chart.pillars.forEach(function (p) {
-      elems.push(WX[p.gan]);
-      elems.push(ZHI_WX[p.zhi]);
-    });
-    if (mz === 0 || mz === 1 || mz === 11) {        // 亥子丑：冬
-      need = '火'; has = elems.indexOf('火') >= 0;
-    } else if (mz === 5 || mz === 6 || mz === 7) {  // 巳午未：夏
-      need = '水'; has = elems.indexOf('水') >= 0;
-    }
-    if (!need) {
+    var dm = chart.dayMaster.gan;      // 日干索引
+    var mz = chart.pillars[1].zhi;     // 月支索引
+    var T = global.Tiaohou;
+    var rule = T ? T.look(dm, mz) : null;
+    var climate = T ? T.CLIMATE[mz] : '';
+    var season = T ? T.SEASON[mz] : '';
+
+    /* 兜底：数据缺失时退回季节法（不应发生，仅为保险） */
+    if (!rule) {
+      var cold = (mz === 0 || mz === 1 || mz === 11);
+      var hot = (mz === 5 || mz === 6 || mz === 7);
+      if (!cold && !hot) {
+        return { needed: false, text: '生于春、秋之月，寒暖适中，一般不需专门调候，回到生克格局即可。' };
+      }
       return {
-        needed: false,
-        text: '生于春、秋之月，寒暖适中，一般不需专门调候，回到生克格局即可。'
+        needed: true, urgent: true, element: cold ? '火' : '水', has: false,
+        season: cold ? '冬' : '夏', climate: climate, month: ZHI[mz] + '月',
+        detail: '', text: cold ? '冬月生人，需火暖局。' : '夏月生人，需水润泽。'
       };
     }
+
+    var has = T.hasGan(chart, rule.main);       // 局中（含藏干）是否有这个调候用神
+    var el = B.WX[GAN.indexOf(rule.main)];      // 用神的五行
+    var urgent = (season === '冬' || season === '夏');
+
+    var text = '《穷通宝鉴》：' + GAN[dm] + '（' + (T ? T.WX[dm] : WX[dm]) + '）日主生于'
+      + ZHI[mz] + '月（' + climate + '），调候用神取「' + rule.main + '」(' + el + ')。'
+      + rule.text + '。'
+      + (has
+        ? ' 局中（含藏干）已有「' + rule.main + '」，调候到位。'
+        : ' 局中未见「' + rule.main + '」，调候不足——'
+          + (urgent ? '此为寒暖燥湿之偏，调候为急，优先级常高于扶抑。'
+                    : '所幸非寒暖极端之月，影响较冬夏为轻，但仍属缺憾。'));
+
     return {
-      needed: true, element: need, has: has,
-      season: (mz === 0 || mz === 1 || mz === 11) ? '冬月（水寒土冻）' : '夏月（火炎土燥）',
-      text: (need === '火'
-        ? '冬月生人，天寒地冻，需丙丁火暖局解冻；调候用神优先级常高于扶抑。'
-        : '夏月生人，烈日炎炎，需壬癸水润泽滋培；无水润则性燥福薄。')
-        + (has ? ' 局中已有' + need + '，调候到位。' : ' 局中未见' + need + '，调候不足，纵有良格也多身心煎熬。')
+      needed: true, urgent: urgent, element: el, main: rule.main, has: has,
+      season: season, climate: climate, month: ZHI[mz] + '月',
+      dayMaster: GAN[dm] + (T ? T.WX[dm] : WX[dm]),
+      detail: rule.text, text: text
     };
+  }
+
+  /* ---------- 六亲与宫位 ---------- */
+  /* 十神 → 六亲。male / female 不同则分列，相同则用 common */
+  var LIUQIN = {
+    zy: { common: '母亲、长辈、师长、学历文凭、庇护', note: '无正印则看偏印' },
+    py: { common: '继母、庶母、偏门学问与技艺', note: '正统以外的一切「生我」之力' },
+    zc: { male: '妻子、固定资产、稳定收入', female: '钱财、务实经营', note: '男命正财为正妻' },
+    pc: { common: '父亲、投资经营、人脉资源、意外之财', note: '偏财为父，古今通用；无偏财看正财' },
+    zg: { male: '女儿、职位、规则、名誉', female: '丈夫、职位、规则、名誉', note: '女命正官为正夫，无正官看七杀' },
+    qs: { male: '儿子、压力、竞争、魄力', female: '偏夫、情人、压力、竞争', note: '男命七杀为儿子' },
+    ss: { male: '才华表达、口福、技艺', female: '女儿、福寿、才艺、温和', note: '女命食神为女儿' },
+    sg: { male: '才华、反叛、创意、技艺', female: '儿子、才华、傲气', note: '女命伤官为儿子' },
+    bs: { male: '兄弟、同辈、朋友、竞争者', female: '姐妹、同辈、朋友、竞争者' },
+    jc: { male: '姐妹、合作伙伴、分利者', female: '兄弟、合作伙伴、分利者' }
+  };
+
+  /* 四柱宫位：谁住在哪里 */
+  var GONGWEI = {
+    year: { name: '祖上宫', scope: '祖辈、根基、童年环境、与父母家族的缘分', age: '1–16 岁' },
+    month: { name: '父母兄弟宫', scope: '父母、兄弟姐妹、青年环境、事业起步的平台', age: '17–32 岁' },
+    day: { name: '夫妻宫', scope: '自己与配偶。日干是我，日支是配偶的位置', age: '33–48 岁' },
+    hour: { name: '子女宫', scope: '子女、晚辈、晚年归宿、成果与输出', age: '49 岁以后' }
+  };
+
+  /* 取某十神在本命性别下的六亲含义 */
+  function liuqinOf(key, sex) {
+    var v = LIUQIN[key];
+    if (!v) return { kin: '—', note: '' };
+    var kin = v.common || (sex === 'M' ? v.male : v.female) || v.male || '';
+    return { kin: kin, note: v.note || '' };
   }
 
   /* ---------- 三、格局 ---------- */
@@ -1506,11 +1770,22 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
     var strong = lvl === '身强' || lvl === '偏强';
     var weak = lvl === '身弱' || lvl === '偏弱';
 
-    /* 调候优先 */
+    /* 调候：《穷通宝鉴》十干逐月。冬夏寒暖极端者为「急」，其余为常 */
     if (tiaohou.needed && !tiaohou.has) {
       ways.push({
-        way: '调候', element: tiaohou.element, priority: 1,
-        text: '命局' + tiaohou.season + '，寒暖燥湿偏差明显，调候为急，优先级高于扶抑。'
+        way: '调候', element: tiaohou.element,
+        priority: tiaohou.urgent ? 1 : 2,
+        text: ('生于' + tiaohou.month + '（' + tiaohou.climate + '），《穷通宝鉴》取「'
+          + tiaohou.main + '」(' + tiaohou.element + ')为调候用神：' + tiaohou.detail + '。')
+          + (tiaohou.urgent
+            ? ' 此月寒暖燥湿偏差明显，调候为急，优先级高于扶抑。'
+            : ' 此月寒暖非极端，重要程度略低于扶抑，但局中缺之终属不足。')
+      });
+    } else if (tiaohou.needed && tiaohou.has) {
+      ways.push({
+        way: '调候', element: tiaohou.element, priority: 5,
+        text: '局中已有调候用神「' + tiaohou.main + '」，' + tiaohou.month + '（'
+          + tiaohou.climate + '）的寒暖燥湿已经到位，不必再补。'
       });
     }
     /* 通关：两行交战 */
@@ -1653,7 +1928,8 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
   global.BaziInterp = {
     analyzeAll: analyzeAll, analyzeStrength: analyzeStrength, analyzeTiaohou: analyzeTiaohou,
     analyzeGeju: analyzeGeju, analyzeYongshen: analyzeYongshen, analyzeYun: analyzeYun,
-    SS_MEAN: SS_MEAN, LEVEL_COMMENT: LEVEL_COMMENT
+    SS_MEAN: SS_MEAN, LEVEL_COMMENT: LEVEL_COMMENT,
+    LIUQIN: LIUQIN, GONGWEI: GONGWEI, liuqinOf: liuqinOf
   };
 })(window);
 
@@ -2014,30 +2290,49 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
     if (!p) p = chart.pillars[2];
     var isDay = p.key === 'day';
     var mean = I.SS_MEAN[p.ss.key];
+    var gw = I.GONGWEI[p.key];
+    var sex = chart.input.sex;
+    var lq = I.liuqinOf(p.ss.key, sex);
     var html = '';
 
     html += '<div class="sec"><h3>' + esc(p.title) + ' · ' + p.ganzhi + '（' + esc(p.tag) + '）</h3>';
+
+    /* 宫位：这一柱管什么 */
+    html += '<div class="card"><div class="card-title">' + esc(gw.name)
+      + '<span class="tag main">' + esc(gw.age) + '</span></div>'
+      + '<div class="card-text">' + esc(gw.scope) + '。</div></div>';
+
+    /* 天干 */
     html += '<div class="card"><div class="card-title">天干 ' + B.GAN[p.gan]
       + '<span class="tag ' + (isDay ? 'main' : '') + '">' + (isDay ? '日主·我' : p.ss.name) + '</span>'
       + '<span class="tag">' + B.WX[p.gan] + '行</span></div>'
       + '<div class="card-text">'
       + (isDay
-        ? '这是「我」本人。日干代表命主自己，日支是夫妻宫。全局所有十神关系都以它为中心展开。'
+        ? '这是「我」本人。日干代表命主自己，全局十神关系都以它为中心展开；日支是配偶的位置。'
         : ('此干对日主（' + B.GAN[chart.dayMaster.gan] + '）而言是' + esc(mean.title) + '。'
           + esc(mean.mean) + '。心性上：' + esc(mean.traits) + '。'))
+      + (isDay ? '' : '<div style="margin-top:8px"><b>六亲：</b>' + esc(lq.kin)
+        + (lq.note ? '<span style="color:var(--ink3);font-size:12.5px">（' + esc(lq.note) + '）</span>' : '') + '</div>')
       + '</div></div>';
 
+    /* 地支 */
     html += '<div class="card"><div class="card-title">地支 ' + B.ZHI[p.zhi]
-      + '<span class="tag">' + p.zhiWx + '行</span><span class="tag">' + esc(p.nayin) + '</span></div>'
+      + '<span class="tag">' + p.zhiWx + '行</span><span class="tag">' + esc(p.nayin) + '</span>'
+      + (isDay ? '<span class="tag main">夫妻宫</span>' : '') + '</div>'
       + '<div class="card-text">六十甲子纳音 ' + esc(p.nayin) + '。地支是天干的根，'
-      + '藏干才是这一柱真正的力量来源。</div></div>';
+      + '藏干才是这一柱真正的力量来源'
+      + (isDay ? '；<b>日支是配偶宫</b>，看婚姻主要看这里。' : '。') + '</div></div>';
 
-    html += '<table class="grid"><thead><tr><th style="width:70px">藏干</th><th style="width:80px">力量</th>'
-      + '<th style="width:60px">五行</th><th style="width:90px">十神</th><th>说明</th></tr></thead><tbody>';
+    /* 藏干表（含六亲） */
+    html += '<table class="grid"><thead><tr><th style="width:60px">藏干</th><th style="width:78px">力量</th>'
+      + '<th style="width:48px">五行</th><th style="width:78px">十神</th><th style="width:150px">六亲</th>'
+      + '<th>说明</th></tr></thead><tbody>';
     p.canggan.forEach(function (c) {
       var deg = c.degree === '本' ? '本气（主）' : (c.degree === '中' ? '中气（次）' : '余气（弱）');
+      var lq2 = I.liuqinOf(c.ss.key, sex);
       html += '<tr><td><b>' + B.GAN[c.gan] + '</b></td><td>' + deg + '</td><td>' + B.WX[c.gan] + '</td>'
         + '<td class="' + ssCls(c.ss.key) + '">' + c.ss.name + '</td>'
+        + '<td>' + esc(lq2.kin) + '</td>'
         + '<td>' + esc(I.SS_MEAN[c.ss.key].mean) + '</td></tr>';
     });
     html += '</tbody></table>';
@@ -2172,18 +2467,57 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
     }).join('');
   }
 
+  /* 某日主的十二月调候速查表（高亮本命月令） */
+  function tiaohouTable(dmGanIdx, curZhi) {
+    var T = window.Tiaohou;
+    if (!T) return '';
+    var order = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1];   // 寅→丑 自然年序
+    var html = '<table class="grid"><thead><tr><th style="width:78px">月令</th>'
+      + '<th style="width:88px">气候</th><th style="width:80px">调候用神</th><th>要旨</th></tr></thead><tbody>';
+    order.forEach(function (z) {
+      var r = T.look(dmGanIdx, z);
+      if (!r) return;
+      var isCur = (z === curZhi);
+      html += '<tr' + (isCur ? ' style="background:#FDF6E8"' : '') + '>'
+        + '<td><b>' + T.ZHI[z] + '月</b>' + (isCur ? ' <span class="tag main">本命</span>' : '') + '</td>'
+        + '<td>' + esc(T.CLIMATE[z]) + '</td>'
+        + '<td><b style="font-size:15px">' + r.main + '</b></td>'
+        + '<td>' + esc(r.text) + '</td></tr>';
+    });
+    return html + '</tbody></table>';
+  }
+
   /* ---------------- 五、调候 · 用神 ---------------- */
   function renderYongshen(chart, A) {
     var th = A.tiaohou, ys = A.yongshen;
     var html = '';
 
-    html += '<div class="sec"><h3>调候先看</h3>'
-      + '<div class="card"><div class="card-title">' + (th.needed ? '需要调候' : '无需专门调候')
-      + (th.needed ? '<span class="tag ' + (th.has ? 'good' : 'bad') + '">' + th.element + (th.has ? '·已到位' : '·不足') + '</span>' : '')
-      + (th.needed ? '<span class="tag">' + th.season + '</span>' : '') + '</div>'
-      + '<div class="card-text">' + esc(th.text) + '</div></div>'
+    var thCard;
+    if (th.needed) {
+      thCard = '<div class="card" style="border-color:var(--gold);background:#FDF8EC">'
+        + '<div class="card-title">调候用神：<b style="font-size:17px">' + esc(th.main) + '</b>'
+        + '<span class="tag ' + (th.has ? 'good' : 'bad') + '">' + (th.has ? '局中已有·到位' : '局中未见·不足') + '</span>'
+        + '<span class="tag">' + esc(th.month) + '·' + esc(th.climate) + '</span>'
+        + (th.urgent
+          ? '<span class="tag main">寒暖极端·调候为急</span>'
+          : '<span class="tag">非极端月·次于扶抑</span>')
+        + '</div>'
+        + '<div class="card-text">' + esc(th.text) + '</div>'
+        + '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line2);font-size:12.5px;color:var(--ink3)">'
+        + '<b>《穷通宝鉴》原文要旨：</b>' + esc(th.detail) + '</div></div>';
+    } else {
+      thCard = '<div class="card"><div class="card-text">' + esc(th.text) + '</div></div>';
+    }
+
+    html += '<div class="sec"><h3>调候（《穷通宝鉴》十干逐月）</h3>' + thCard
       + '<div class="ni">《滴天髓》「天道有寒暖，地道有燥湿」。<b>调候的优先级常高于扶抑</b>——'
-      + '冬月无火、夏月无水，格局再好也多身心煎熬。先看寒暖，再论生克。</div></div>';
+      + '冬月无火、夏月无水，格局再好也多身心煎熬。先看寒暖，再论生克。<br>'
+      + '<b>注意：调候不是简单的「冬火夏水」——「冬天生人一律补火」是外行话。</b>'
+      + '《穷通宝鉴》的规则是<b>十天干 × 十二月令</b>共 120 条：同样是子月出生，'
+      + '甲木要丁、丙火要壬、癸水要庚、辛金要丙，四个完全不同的答案。</div></div>';
+
+    html += '<div class="sec"><h3>' + B.GAN[chart.dayMaster.gan] + '日主 · 十二个月调候速查</h3>'
+      + tiaohouTable(chart.dayMaster.gan, chart.pillars[1].zhi) + '</div>';
 
     html += '<div class="sec"><h3>用神五路</h3>';
     ys.ways.forEach(function (w, i) {
@@ -2413,6 +2747,42 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
 
     html += '<div class="sec"><h3>旺相休囚死（月令对日主）</h3>' + wxTable() + '</div>';
 
+    html += '<div class="sec"><h3>十干逐月调候用神速查（《穷通宝鉴》）</h3>'
+      + '<div class="hint" style="margin-bottom:8px">横列是月令，纵列是日主，交叉处即该月第一调候用神。'
+      + '这张表是《穷通宝鉴》的核心，也是「调候派」区别于「格局派」「扶抑派」的标志。</div>'
+      + qiongtongTable()
+      + '<div class="ni">读法举例：同为冬月生，<b>甲木子月要丁</b>、<b>庚金子月要丁丙</b>、<b>丙火子月要壬</b>、'
+      + '<b>癸水子月要庚辛</b>——四个完全不同的答案。「冬天生人一律补火」是外行话，'
+      + '真正的调候要看日主是谁。</div></div>';
+
+    html += '<div class="sec"><h3>八格成格条件（《子平真诠》· 论用神成败救应）</h3>'
+      + '<table class="grid"><thead><tr><th style="width:96px">格局</th><th>成格条件（原文要旨）</th></tr></thead><tbody>'
+      + CHENGGE_ROWS() + '</tbody></table>'
+      + '<div class="ni" style="margin-top:12px"><b>相神</b>：保护格神的那个字。'
+      + '《子平真诠》极重相神——<b>相神受伤，比格神受伤危害还大</b>。'
+      + '比如官格的相神是印（印能制伤官、护住官星），印被财破，官格就立不住。</div>'
+      + '<div style="margin-top:12px"><b>吉神顺用 / 凶神逆用（原文）</b></div>'
+      + '<div class="card"><div class="card-text" style="line-height:1.9">'
+      + '「是以善而顺用之，则财喜食神以相生，生官以护财；官喜透财以相生，生印以护官；'
+      + '印喜官煞以相生，劫才以护印；食喜身旺以相生，生财以护食。<br>'
+      + '不善而逆用之，则七煞喜食神以制伏，忌财印以资扶；伤官喜佩印以制伏，生财以化伤；'
+      + '阳刃喜官煞以制伏，忌官煞之俱无；月劫喜透官以制伏，利用财而透食以化劫。」'
+      + '</div></div></div>';
+
+    html += sec('格局定贵贱，扶抑定安危（两套体系别硬套）', [
+      card('格局法（子平真诠体系）', '以<b>月令格神</b>为中心，看格局成破。'
+        + '吉神顺用（生之护之），凶神逆用（制之化之）。'
+        + '<b>格局优先看格神成败，身强身弱是次要。</b>哪怕日主身弱，只要格局保全，依然可以有贵；'
+        + '反之格局破了，就算日主平衡，也多波折。'),
+      card('扶抑法（旺衰平衡体系）', '以<b>日主</b>为中心，追求五行平衡。'
+        + '身旺则泄、克、耗（抑）；身弱则生、帮（扶）。'
+        + '这是现代最流行的一套，长于判断承载力、健康、抗压能力。'),
+      card('为什么不能混', '两套体系的<b>立足点不同</b>：一个问「这个结构成立不成立」，'
+        + '一个问「这个人扛不扛得住」。同一个八字，格局法可能说「贵」，扶抑法可能说「身弱」——'
+        + '这两句话并不矛盾，说的是两件事。<br>'
+        + '<b>实务上的用法</b>：格局判层次高低，扶抑判安危起伏，调候判身心舒泰，三者合看。')
+    ]);
+
     html += sec('取用神五法', [
       card('扶抑', '最常用。身强则抑之泄之（食伤、财、官杀），身弱则扶之生之（印、比劫）。目的是把命局调回中和。'),
       card('调候', '《滴天髓》一脉。<b>冬月生人需火，夏月生人需水</b>，专治寒暖燥湿偏差。优先级常高于扶抑——无调候则格局难发。'),
@@ -2430,6 +2800,14 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
       card('第 6 步 · 排岁运', '起运岁数 → 大运顺逆 → 每十年一运。再叠加流年：<b>先看大运背景，再看流年具体</b>。')
     ]);
 
+    html += '<div class="sec"><h3>六亲：十神对应谁</h3>' + liuqinTable()
+      + '<div class="ni">六亲要<b>「十星 + 宫位 + 运程」三者合看</b>：'
+      + '十神决定是谁，宫位决定住在哪里，大运决定什么时候应事。'
+      + '父亲看偏财（无偏财看正财），母亲看正印（无正印看偏印）。'
+      + '父母看幼运，夫妻兄弟看中运，子女看老运。</div></div>';
+
+    html += '<div class="sec"><h3>宫位：谁住在哪里</h3>' + gongweiTable() + '</div>';
+
     html += sec('流派口径差异（本系统全部开放给你选）', [
       card('早晚子时', '<b>古法</b>：23:00–24:00 仍算当日子时，日柱不变，时干按「次日日干」起子时。'
         + '<b>换日法</b>（大宗现代做法）：23:00 起日柱顺延一天。两种口径会导致日柱、时柱同时改变，必须先确认自己跟哪一派。'),
@@ -2439,6 +2817,37 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
       card('用神定义', '「用神」这个词各家含义并不统一：<b>格局派</b>以月令格局成败为用神，'
         + '<b>调候派</b>以寒暖所需为用神，<b>扶抑派</b>（现代书房派）以平衡日主强弱为用神。'
         + '遇到结论冲突，先问「你说的是哪一派的用神」。')
+    ]);
+
+    html += sec('现代学术视角：它站得住脚吗', [
+      card('陆致极：唯一有计算语言学背景的命理学者',
+        '1949 年生于上海，1981 年复旦中文系硕士，1991 年美国伊利诺大学语言学博士，'
+        + '出版过《计算语言学导论》。他的价值在于<b>用学术方法做命理</b>：<br>'
+        + '· 考证出「纳音古法 → 过渡形态 → 正五行子平今法」的完整演变链，'
+        + '填补了四柱源流研究的关键缺口；<br>'
+        + '· 提出<b>「时空基因」假说</b>：出生时空结构如同天地赋予的另一种基因，'
+        + '对应先天体质禀赋；用逻辑回归、聚类统计挖掘四柱与体质、易发疾病的相关性；<br>'
+        + '· 明确反对把旺衰当唯一标准——「旺衰是结构分析的重要视角之一」，但不是第一性。'),
+      card('四条站不住的地方（科学哲学层面）',
+        '<b>① 不可证伪</b>：同一件事可以多种解法——创业失败既可说「财星被劫」也可说「官杀攻身」，'
+        + '成功又可套「食神生财」。一个能解释一切的理论，等于什么都没预测。<br>'
+        + '<b>② 不可重复</b>：同一八字，不同命师结论迥异；「早年奔波、中年有贵人」这类话放之四海皆准。<br>'
+        + '<b>③ 无物理机制</b>：五行生克是<b>符号关系</b>，不是物质相互作用；'
+        + '基因决定禀赋，家庭资本、教育、社会结构决定阶层。<br>'
+        + '<b>④ 大样本无显著因果</b>：香港大学 2005 年研究显示八字与 MBTI 性格无显著相关；'
+        + '明清科举上榜者的八字也没有共性。'),
+      card('那为什么那么多人觉得「准」',
+        '<b>巴纳姆效应</b>：笼统而正反兼顾的描述，让人误以为是专属定制；<br>'
+        + '<b>确认偏误</b>：只记住说中的，忽略没说的；<br>'
+        + '<b>自我实现预言</b>：信「今年利财」便更敢决策，成功归给八字；<br>'
+        + '<b>幸存者偏差</b>：命馆只展示应验案例，反例不被传播。'),
+      card('那它还值得学吗',
+        '值得，但要换一个定位：<br>'
+        + '· 作为<b>人格隐喻工具</b>——日主强弱、十神配置可当「本土化的大五人格」，类似 MBTI 的启发式；<br>'
+        + '· 作为<b>决策叙事框架</b>——「身弱宜守、身强宜拓」与战略管理的资源基础观互为印证，'
+        + '帮自己在关键节点做自我反思；<br>'
+        + '· 作为<b>中国思维的样本</b>——阴阳辩证、动态平衡，是理解中医、农学、本土管理的一把钥匙。<br>'
+        + '<b>王德峰的说法最中肯：命理是「安顿人心的形而上」，可当文化，不可当科学。</b>')
     ]);
 
     html += '<div class="sec"><h3>进阶书目（按读的顺序）</h3>' + bookTable() + '</div>';
@@ -2523,6 +2932,73 @@ window.JIEQI_DATA={"1900":[[0,1,6,2,3],[1,1,20,19,32],[2,2,4,13,51],[3,2,19,10,1
       var neg = r[2].indexOf('−') >= 0;
       html += '<tr><td><b>' + r[0] + '</b></td><td>' + r[1] + '</td>'
         + '<td style="color:' + (neg ? 'var(--cinnabar)' : 'var(--jade)') + '">' + r[2] + '</td></tr>';
+    });
+    return html + '</tbody></table>';
+  }
+
+  /* 八格成格条件（子平真诠 · 论用神成败救应） */
+  function CHENGGE_ROWS() {
+    var rows = [
+      ['正官格', '官逢财印，又无刑冲破害'],
+      ['财格', '财旺生官；或财逢食生而身强带比；或财格透印而位置妥适，两不相克'],
+      ['印格', '印轻逢煞；或官印双全；或身印两旺而用食伤泄气；或印多逢财而财透根轻'],
+      ['食神格', '食神生财；或食带煞而无财，弃食就煞而透印'],
+      ['七杀格', '身强七煞逢制伏'],
+      ['伤官格', '伤官生财；或伤官佩印而伤官旺、印有根；或伤官旺、身主弱而透煞印；或伤官带煞而无财'],
+      ['阳刃格', '透官煞而露财印，不见伤官'],
+      ['建禄月劫格', '透官而逢财印；透财而逢食伤；透煞而遇制伏']
+    ];
+    return rows.map(function (r) {
+      return '<tr><td><b>' + r[0] + '</b></td><td>' + r[1] + '</td></tr>';
+    }).join('');
+  }
+
+  /* 十干 × 十二月 第一调候用神 */
+  function qiongtongTable() {
+    var T = window.Tiaohou;
+    if (!T) return '';
+    var order = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1];
+    var html = '<table class="grid" style="font-size:12.5px"><thead><tr><th style="width:58px">日主＼月</th>';
+    order.forEach(function (z) { html += '<th style="text-align:center">' + T.ZHI[z] + '</th>'; });
+    html += '</tr></thead><tbody>';
+    for (var g = 0; g < 10; g++) {
+      html += '<tr><th style="background:#F7F2E8;text-align:center">' + T.GAN[g] + '</th>';
+      order.forEach(function (z) {
+        var r = T.look(g, z);
+        html += '<td style="text-align:center">' + (r ? '<b>' + r.main + '</b>' : '—') + '</td>';
+      });
+      html += '</tr>';
+    }
+    return html + '</tbody></table>';
+  }
+
+  /* 六亲表 */
+  function liuqinTable() {
+    var order = ['zy', 'py', 'bs', 'jc', 'ss', 'sg', 'zc', 'pc', 'zg', 'qs'];
+    var html = '<table class="grid"><thead><tr><th style="width:64px">十神</th>'
+      + '<th>男命</th><th>女命</th><th style="width:170px">备注</th></tr></thead><tbody>';
+    order.forEach(function (k) {
+      var v = I.LIUQIN[k];
+      if (!v) return;
+      var m = v.common || v.male || '';
+      var f = v.common || v.female || '';
+      html += '<tr><td class="' + ssCls(k) + '"><b>' + I.SS_MEAN[k].title + '</b></td>'
+        + '<td>' + esc(m) + '</td><td>' + esc(f) + '</td>'
+        + '<td style="color:var(--ink3);font-size:12.5px">' + esc(v.note || '') + '</td></tr>';
+    });
+    return html + '</tbody></table>';
+  }
+
+  /* 宫位表 */
+  function gongweiTable() {
+    var order = [['year', '年柱'], ['month', '月柱'], ['day', '日柱'], ['hour', '时柱']];
+    var html = '<table class="grid"><thead><tr><th style="width:62px">宫位</th><th style="width:110px">名称</th>'
+      + '<th>主管</th><th style="width:92px">大致年龄段</th></tr></thead><tbody>';
+    order.forEach(function (o) {
+      var g = I.GONGWEI[o[0]];
+      if (!g) return;
+      html += '<tr><td><b>' + o[1] + '</b></td><td>' + esc(g.name) + '</td>'
+        + '<td>' + esc(g.scope) + '</td><td>' + esc(g.age) + '</td></tr>';
     });
     return html + '</tbody></table>';
   }
