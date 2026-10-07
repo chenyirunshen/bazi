@@ -14,7 +14,7 @@ html = html.replace('<link rel="stylesheet" href="src/style.css">',
 
 # JS 按引用顺序内联
 order = ['lunar-data.js', 'jieqi-data.js', '00-lunar.js',
-         '01-bazi-core.js', '02-bazi-interp.js', '03-app.js']
+         '01-bazi-core.js', '04-tiaohou.js', '02-bazi-interp.js', '03-app.js']
 for f in order:
     js = io.open(os.path.join(SRC, f), encoding='utf-8').read()
     html = html.replace('<script src="src/%s"></script>' % f,
