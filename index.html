@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>八字排盘分析系统 · 四柱子平体系</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>八字排盘分析系统<span class="sub">四柱子平体系</span></h1>
+  <p class="tagline">排盘 → 强弱 → 调候 → 格局 → 用神 → 岁运，一条线走通，附理论速查</p>
+</header>
+
+<!-- ============ 输入区 ============ -->
+<div class="panel">
+  <h2>排盘输入</h2>
+  <div class="form-grid">
+    <div class="field">
+      <label>历法</label>
+      <div class="radio-row">
+        <label><input type="radio" name="cal" value="S" id="calS" checked> 公历</label>
+        <label><input type="radio" name="cal" value="L" id="calL"> 农历</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>性别（定大运顺逆）</label>
+      <div class="radio-row">
+        <label><input type="radio" name="sex" value="M" id="sexM" checked> 男</label>
+        <label><input type="radio" name="sex" value="F" id="sexF"> 女</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>出生地（定真太阳时）</label>
+      <select id="city"></select>
+    </div>
+    <div class="field">
+      <label>经度（可手动覆盖）</label>
+      <input type="number" id="lng" step="0.01" value="118.28">
+    </div>
+  </div>
+
+  <!-- 公历 -->
+  <div id="solarBox">
+    <div class="form-grid" style="margin-top:14px">
+      <div class="field"><label>年</label><select id="y"></select></div>
+      <div class="field"><label>月</label><select id="mo"></select></div>
+      <div class="field"><label>日</label><select id="d"></select></div>
+      <div class="field"><label>时</label><select id="h"></select></div>
+      <div class="field"><label>分</label><select id="mi"></select></div>
+    </div>
+  </div>
+
+  <!-- 农历 -->
+  <div id="lunarBox" style="display:none">
+    <div class="form-grid" style="margin-top:14px">
+      <div class="field"><label>农历年</label><select id="ly"></select></div>
+      <div class="field"><label>月</label><select id="lmo"></select></div>
+      <div class="field"><label>&nbsp;</label><div class="radio-row"><label><input type="checkbox" id="lLeap"> 闰月</label></div></div>
+      <div class="field"><label>日</label><select id="ld"></select></div>
+      <div class="field"><label>时</label><select id="lh"></select></div>
+      <div class="field"><label>分</label><select id="lmi"></select></div>
+    </div>
+  </div>
+
+  <div class="opt-title">流派口径（不同派别算法有别，此处全部开放给你选）</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>时间校正</label>
+      <div class="radio-row">
+        <label><input type="checkbox" id="useTST" checked> 真太阳时</label>
+        <label><input type="checkbox" id="useDST" checked> 夏令时</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>晚子时（23:00–24:00）</label>
+      <select id="ziSwap">
+        <option value="0">古法：日柱不变，时柱用次日子时起</option>
+        <option value="1">换日法：日柱顺延一天</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>起运折算</label>
+      <select id="qiyunMode">
+        <option value="linear">三日折一岁（现代主流·线性）</option>
+        <option value="shichen">一时辰折十日（古法）</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="radio-row"><label id="lunarEcho" style="color:var(--ink3)">&nbsp;</label></div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="primary" id="btnCalc">起 盘</button>
+    <button id="btnDemo">载入示例</button>
+    <button id="btnNow">用当下时间</button>
+  </div>
+  <div class="hint">
+    · <b>换年在立春，不在正月初一。</b>本系统严格按节气太阳历排盘，这与紫微斗数（按农历正月初一换年）不同。<br>
+    · <b>换月只看「节」不看「气」</b>：立春、惊蛰、清明……十二节才是月与月的分界。<br>
+    · 真太阳时 = 北京时间 + 经度差(每1°约4分) + 均时差(±16分)；勾选夏令时后，1986–1991 年出生的会自动回拨 1 小时。<br>
+    · 支持范围：公历 1900–2100 年。节气数据由寿星万年历（lunar-python）生成，精确到分钟。
+  </div>
+</div>
+
+<!-- ============ 结果区 ============ -->
+<div id="result" style="display:none">
+
+  <div class="chart-area">
+    <div class="chart-box">
+      <div class="bz-grid" id="bzGrid"></div>
+    </div>
+    <div class="info-box">
+      <div class="center-title" id="bzTitle">四柱</div>
+      <div class="info-list" id="infoList"></div>
+      <div class="hint" style="margin-top:14px">
+        点击四柱任一柱，可跳到该柱详解。
+      </div>
+    </div>
+  </div>
+
+  <div class="warn" style="margin-top:24px">
+    本系统用于传统文化学习与自我觉察参考，不作医疗、法律、投资决策依据。<br>
+    八字的价值在于「看清自己的结构，然后调整行为」，不是宿命判定。
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-tab="zong">命局总论</div>
+    <div class="tab" data-tab="sizhu">四柱详解</div>
+    <div class="tab" data-tab="qiangruo">日主强弱</div>
+    <div class="tab" data-tab="geju">格局判定</div>
+    <div class="tab" data-tab="yongshen">调候·用神</div>
+    <div class="tab" data-tab="dayun">大运</div>
+    <div class="tab" data-tab="liunian">流年</div>
+    <div class="tab" data-tab="shensha">神煞·刑冲</div>
+    <div class="tab" data-tab="theory">理论速查</div>
+  </div>
+
+  <div class="tabpane on" id="pane-zong"></div>
+  <div class="tabpane" id="pane-sizhu"></div>
+  <div class="tabpane" id="pane-qiangruo"></div>
+  <div class="tabpane" id="pane-geju"></div>
+  <div class="tabpane" id="pane-yongshen"></div>
+  <div class="tabpane" id="pane-dayun"></div>
+  <div class="tabpane" id="pane-liunian">
+    <div class="liunian-row">
+      <div class="field"><label>流年</label><select id="lny"></select></div>
+      <div class="field"><label>或直接输入年份</label><input type="number" id="lnyInput"></div>
+      <button id="btnLn">查 询</button>
+      <button id="btnLnPrev">上一年</button>
+      <button id="btnLnNext">下一年</button>
+    </div>
+    <div id="lnContent"></div>
+  </div>
+  <div class="tabpane" id="pane-shensha"></div>
+  <div class="tabpane" id="pane-theory"></div>
+
+</div>
+
+<div class="foot">
+  八字排盘分析系统 · 历法数据来自寿星万年历（lunar-python），节气精确到分钟，覆盖 1900–2100<br>
+  论法以《子平真诠》月令格局为纲，兼采《渊海子平》《三命通会》《滴天髓》调候扶抑之说，供学习参考
+</div>
+
+</div>
+
+<script src="src/lunar-data.js"></script>
+<script src="src/jieqi-data.js"></script>
+<script src="src/00-lunar.js"></script>
+<script src="src/01-bazi-core.js"></script>
+<script src="src/02-bazi-interp.js"></script>
+<script src="src/03-app.js"></script>
+</body>
+</html>
